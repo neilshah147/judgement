@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Judgement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Instrument Sans',sans-serif;background:linear-gradient(155deg,#14532d,#166534,#15803d);min-height:100vh;color:#fff;padding:12px;font-size:14px}
+#app{display:flex;flex-direction:column;align-items:center;min-height:100vh}
+.box{background:rgba(0,0,0,.42);border-radius:14px;padding:16px;width:100%;max-width:700px;margin-bottom:10px}
+.btn{padding:10px 26px;border-radius:9px;border:none;background:#fbbf24;color:#111;font-weight:700;font-size:15px;cursor:pointer;margin:4px;font-family:'Instrument Sans',sans-serif;display:block;width:100%}
+.btn:hover{background:#fcd34d}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:#fff}
+.btn-outline:hover{background:rgba(255,255,255,.1)}
+.btn-sm{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-size:11px;cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:600;width:auto;display:inline-block}
+.btn-sm:hover{background:rgba(255,255,255,.16)}
+.bid-btn{padding:8px 15px;border-radius:7px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.09);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin:3px;font-family:'Instrument Sans',sans-serif}
+.bid-btn:hover{background:rgba(255,255,255,.22)}
+.bid-btn.off{opacity:.22;cursor:not-allowed;pointer-events:none}
+.card{width:54px;height:80px;border-radius:8px;border:2.5px solid #bbb;background:#fff;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,box-shadow .12s;user-select:none;margin:3px;vertical-align:top}
+.card:hover{box-shadow:0 5px 16px rgba(0,0,0,.4)}
+.card.sel{border-color:#fbbf24;transform:translateY(-18px);box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.card.dim{opacity:.32;cursor:not-allowed;pointer-events:none}
+.card.bad{opacity:.32;cursor:not-allowed;pointer-events:none}
+.card-back{width:54px;height:80px;border-radius:8px;border:2px solid #555;background:repeating-linear-gradient(135deg,#1e3a8a 0,#1e3a8a 9px,#1d4ed8 9px,#1d4ed8 18px);display:inline-block;margin:3px;vertical-align:top}
+.cv{font-size:13px;font-weight:700;line-height:1.2}
+.cs{font-size:20px;line-height:1}
+.slot{width:54px;height:80px;border-radius:8px;border:2px dashed rgba(255,255,255,.15);display:inline-block;margin:3px;vertical-align:top}
+.lbl{opacity:.5;font-size:11px;margin-bottom:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;text-align:center}
+.msg{text-align:center;color:#fbbf24;min-height:22px;margin:5px 0;font-size:13px}
+.row{display:flex;justify-content:center;flex-wrap:wrap;gap:1px;margin:4px 0}
+.thinking{display:inline-flex;align-items:center;gap:8px;opacity:.7;font-size:13px;font-style:italic}
+.dot{width:6px;height:6px;border-radius:50%;background:#fbbf24;display:inline-block;animation:pulse 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{opacity:.45;padding:3px 5px;text-align:center;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase}
+td{padding:4px 5px;text-align:center;border-top:1px solid rgba(255,255,255,.07)}
+h1{font-size:34px;font-weight:700;margin:30px 0 6px;letter-spacing:1px;text-align:center}
+h2{font-size:18px;font-weight:700;text-align:center;margin-bottom:12px}
+.sub{text-align:center;opacity:.55;font-size:13px;margin-bottom:18px}
+.warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:12px;text-align:center;margin-bottom:10px}
+.status-row{display:flex;justify-content:space-around;gap:12px;flex-wrap:wrap;margin:8px 0}
+.status-box{flex:1;min-width:130px;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px}
+input{width:100%;padding:13px;border-radius:10px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:18px;font-family:'Instrument Sans',sans-serif;text-align:center;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px}
+input::placeholder{color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:none;font-size:14px}
+.room-code{font-size:42px;font-weight:700;text-align:center;letter-spacing:6px;color:#fbbf24;margin:14px 0}
+.status-msg{text-align:center;opacity:.7;font-size:13px;margin:10px 0}
+.divider{display:flex;align-items:center;text-align:center;opacity:.4;font-size:12px;margin:20px 0}
+.divider::before,.divider::after{content:'';flex:1;border-bottom:1px solid rgba(255,255,255,.2)}
+.divider span{padding:0 12px}
+.error{color:#fca5a5;text-align:center;font-size:13px;margin-top:8px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fbbf24;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.debug{font-family:monospace;font-size:11px;opacity:.4;white-space:pre-wrap;word-break:break-all;margin-top:20px;max-height:200px;overflow-y:auto}
+.chip{display:inline-block;border-radius:6px;padding:4px 12px;font-size:13px;font-weight:600;margin:2px}
+.card.clickable{cursor:pointer}
+.prog-box{flex:1;min-width:130px;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;text-align:center}
+.result-box{flex:1;min-width:140px;text-align:center}
+.divider-v{width:1px;background:rgba(255,255,255,.1)}
+.mode-btn{padding:18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:17px;cursor:pointer;margin:8px 0;font-family:'Instrument Sans',sans-serif;display:block;width:100%;text-align:left}
+.mode-btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4)}
+.mode-btn .mt{font-size:17px;font-weight:700}
+.mode-btn .ms{font-size:12px;opacity:.6;margin-top:4px;font-weight:400}
+.version-tag{position:fixed;bottom:8px;right:10px;opacity:.35;font-size:11px;font-family:monospace;letter-spacing:.5px;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="version-tag">v1.0</div>
+<div id="app">
+  <h1>⚜ Judgement</h1>
+  <div id="content"></div>
+</div>
+<script>
+// ════════════════════════════════════════════════════════════
+// SHARED CONSTANTS — used by both single-player and multiplayer
+// ════════════════════════════════════════════════════════════
+const SYM={S:'♠',H:'♥',C:'♣',D:'♦'};
+const SNAME={S:'Spades',H:'Hearts',C:'Clubs',D:'Diamonds'};
+const RED={S:false,H:true,C:false,D:true};
+
+// ════════════════════════════════════════════════════════════
+// MODE SELECT
+// ════════════════════════════════════════════════════════════
+function showModeSelect(){
+  if(typeof realtimeChannel!=='undefined'&&realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
+  if(typeof pollInterval!=='undefined'&&pollInterval){clearInterval(pollInterval);pollInterval=null;}
+  document.getElementById('content').innerHTML=`
+    <div class="box" style="max-width:480px;text-align:center;padding:24px">
+      <div class="sub" style="margin-bottom:18px">Choose how you'd like to play</div>
+      <button class="mode-btn" id="btn-mode-sp">
+        <div class="mt">🎮 Play vs Computer</div>
+        <div class="ms">Single player against a tuned AI opponent</div>
+      </button>
+      <button class="mode-btn" id="btn-mode-mp">
+        <div class="mt">🌐 Play Online</div>
+        <div class="ms">Create or join a room to play a real opponent</div>
+      </button>
+    </div>
+  `;
+  document.getElementById('btn-mode-sp').onclick=()=>{initGame();G.phase='start';render();};
+  document.getElementById('btn-mode-mp').onclick=()=>{boot();};
+}
+
+// ════════════════════════════════════════════════════════════
+// SINGLE PLAYER (vs Computer)
+// ════════════════════════════════════════════════════════════
+const SUITS=['S','H','C','D'];
+const SC={S:'#93c5fd',H:'#fca5a5',C:'#86efac',D:'#fdba74'};
+const VALS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RNK=Object.fromEntries(VALS.map((v,i)=>[v,i]));
+const ROUNDS=[7,6,5,4,3,2,1,2,3,4,5,6,7];
+const TRUMPS=['S','H','C','D','S','H','C','D','S','H','C','D','S'];
+
+const TWR={
+  0:[.79,.59,.47,.29,.23,.23,.14], 1:[.77,.65,.43,.39,.33,.25,.18],
+  2:[.83,.62,.51,.44,.40,.32,.25], 3:[.83,.72,.68,.49,.45,.42,.34],
+  4:[.79,.68,.54,.57,.46,.44,.38], 5:[.82,.68,.69,.67,.48,.56,.60],
+  6:[.91,.74,.69,.67,.62,.54,.50], 7:[.88,.83,.70,.60,.69,.65,.60],
+  8:[.94,.87,.80,.81,.75,.77,.76], 9:[.97,.94,.82,.86,.83,.85,.81],
+  10:[.95,.92,.92,.88,.92,.81,.86],11:[.98,.97,.97,.92,.93,.97,.92],
+  12:[1.0,1.0,1.0,1.0,1.0,1.0,1.0]
+};
+const OWR={
+  0:[.50,.36,.31,.20,.19,.15,.09], 1:[.56,.45,.33,.26,.22,.14,.18],
+  2:[.54,.49,.36,.32,.29,.26,.25], 3:[.56,.49,.41,.39,.38,.35,.32],
+  4:[.56,.51,.47,.43,.38,.35,.37], 5:[.59,.56,.54,.55,.47,.50,.45],
+  6:[.63,.61,.59,.56,.55,.50,.53], 7:[.66,.66,.57,.65,.59,.64,.59],
+  8:[.62,.66,.67,.67,.68,.70,.66], 9:[.70,.67,.72,.73,.71,.73,.72],
+  10:[.71,.72,.76,.73,.81,.81,.80],11:[.71,.81,.78,.85,.87,.88,.87],
+  12:[.76,.80,.85,.89,.93,.94,.95]
+};
+function cardWR(card,trump,n){
+  const r=RNK[card.v],idx=Math.min(n-1,6);
+  return card.s===trump?TWR[r][idx]:OWR[r][idx];
+}
+
+const makeDeck=()=>SUITS.flatMap(s=>VALS.map(v=>({s,v,id:v+s})));
+const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]}return b};
+const sortHand=h=>[...h].sort((a,b)=>SUITS.indexOf(a.s)-SUITS.indexOf(b.s)||RNK[b.v]-RNK[a.v]);
+const pow=(c,tr,ld)=>c.s===tr?100+RNK[c.v]:c.s===ld?50+RNK[c.v]:RNK[c.v];
+function trickWinner(plays,trump){
+  const ld=plays[0].card.s;
+  return plays.reduce((b,p)=>pow(p.card,trump,ld)>pow(b.card,trump,ld)?p:b).who;
+}
+function calcScore(bid,won){return bid===won?(bid===0?10:bid*10):0}
+
+function compBid(hand,trump,n,isDealer,oppBid,pScore,cScore,roundsLeft){
+  let est=hand.reduce((s,c)=>s+cardWR(c,trump,n),0);
+  if(oppBid!==null&&!isDealer&&oppBid>n*0.6) est=Math.max(0,est-0.4);
+  const gap=cScore-pScore,urgent=roundsLeft<=4;
+  let bid;
+  if(gap<-40&&urgent) bid=Math.min(Math.round(est+0.5),n);
+  else if(gap>40&&urgent) bid=Math.max(Math.round(est-0.5),0);
+  else bid=Math.round(est);
+  bid=Math.max(0,Math.min(bid,n));
+  if(isDealer&&oppBid!==null){
+    const forb=n-oppBid;
+    if(forb>=0&&forb<=n&&bid===forb){
+      const cands=[];for(let x=0;x<=n;x++)if(x!==forb)cands.push(x);
+      if(cands.length)bid=cands.reduce((a,b)=>Math.abs(a-est)<Math.abs(b-est)?a:b);
+    }
+  }
+  return bid;
+}
+function compBidBlind(myCard,oppCard,trump,isDealer,oppBid){
+  let iWin;
+  if(myCard.s===trump&&oppCard.s!==trump)iWin=true;
+  else if(oppCard.s===trump&&myCard.s!==trump)iWin=false;
+  else if(myCard.s===trump&&oppCard.s===trump)iWin=RNK[myCard.v]>RNK[oppCard.v];
+  else iWin=RNK[myCard.v]>RNK[oppCard.v];
+  let bid=iWin?1:0;
+  if(isDealer&&oppBid!==null){const forb=1-oppBid;if(bid===forb&&forb>=0&&forb<=1)bid=1-bid;}
+  return Math.max(0,Math.min(bid,1));
+}
+
+function randOppCard(exclude,leadSuit){
+  for(let i=0;i<80;i++){
+    const s=leadSuit&&Math.random()<.55?leadSuit:SUITS[0|Math.random()*4];
+    const v=VALS[0|Math.random()*13];
+    if(!exclude.has(v+s))return{s,v,id:v+s};
+  }
+  return{s:SUITS[0|Math.random()*4],v:VALS[0|Math.random()*13],id:'xx'};
+}
+function evalCard(card,hand,trick,trump,bid,won,depth,excl){
+  const NSIM=5;let total=0;
+  const ex=new Set([...excl,...hand.map(c=>c.id)]);
+  for(let i=0;i<NSIM;i++){
+    let full;
+    if(!trick.length){
+      const opp=randOppCard(ex,card.s);
+      full=[{who:'c',card},{who:'p',card:opp}];
+    }else full=[...trick,{who:'c',card}];
+    const w=trickWinner(full,trump);
+    const nw=won+(w==='c'?1:0);
+    const nh=hand.filter(c=>c.id!==card.id);
+    if(depth===0||!nh.length){total+=-Math.abs(nw-bid)*10;continue;}
+    const nex=new Set([...ex,card.id]);
+    if(w==='c'){
+      let best=-1e9;
+      for(const nc of nh.slice(0,3)){const s=evalCard(nc,nh,[],trump,bid,nw,depth-1,nex);if(s>best)best=s;}
+      total+=best;
+    }else{
+      const pl=randOppCard(nex,null);
+      const nt=[{who:'p',card:pl}];
+      const suited=nh.filter(c=>c.s===pl.s);
+      const pool=suited.length?suited:nh;
+      let best=-1e9;
+      for(const nc of pool.slice(0,3)){const s=evalCard(nc,nh,nt,trump,bid,nw,depth-1,nex);if(s>best)best=s;}
+      total+=best;
+    }
+  }
+  return total/NSIM;
+}
+function compPlay(hand,trick,trump,bid,won){
+  const ls=trick.length?trick[0].card.s:null;
+  const suited=ls?hand.filter(c=>c.s===ls):[];
+  const pool=suited.length?suited:[...hand];
+  const excl=new Set(hand.map(c=>c.id));
+  const depth=hand.length<=3?2:1;
+  let best=null,bests=-1e9;
+  for(const card of pool){
+    const s=evalCard(card,hand,trick,trump,bid,won,depth,excl);
+    if(s>bests){bests=s;best=card;}
+  }
+  return best||pool[0];
+}
+
+function cHTML(card,opts={}){
+  if(opts.back)return`<div class="card-back"></div>`;
+  if(!card)return`<div class="slot"></div>`;
+  const col=RED[card.s]?'#b91c1c':'#111';
+  let cls='card';
+  if(opts.sel)cls+=' sel';
+  if(opts.dim)cls+=' dim';
+  if(opts.bad)cls+=' bad';
+  const dat=opts.click?`data-cid="${card.id}"`:'';
+  return`<div class="${cls}" style="color:${col}" ${dat}><div class="cv">${card.v}</div><div class="cs">${SYM[card.s]}</div></div>`;
+}
+function thinkingDots(msg){
+  return`<div class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ${msg}</div>`;
+}
+
+let G,histNewestFirst=true;
+function initGame(){
+  G={phase:'start',roundIdx:0,dealer:Math.random()<.5?'player':'comp',
+    playerHand:[],compHand:[],playerBid:null,compBidVal:null,
+    bidOrder:[],bidStep:0,playerTricks:0,compTricks:0,
+    trick:[],leader:null,turn:null,handsDone:0,
+    playerScore:0,compScore:0,history:[],
+    selCard:null,msg:'',waiting:false,
+    showTrick:false,trickMsg:'',lastWinner:null,compThinking:false};
+}
+const N=()=>ROUNDS[G.roundIdx];
+const TR=()=>TRUMPS[G.roundIdx];
+const IS_BLIND=()=>G.roundIdx===6;
+const ROUNDS_LEFT=()=>13-G.roundIdx;
+
+function startRound(){
+  const n=N();
+  const deck=shuffle(makeDeck());
+  G.playerHand=sortHand(deck.slice(0,n));
+  G.compHand=sortHand(deck.slice(n,2*n));
+  G.playerBid=null;G.compBidVal=null;
+  G.playerTricks=0;G.compTricks=0;
+  G.trick=[];G.leader=null;G.turn=null;
+  G.handsDone=0;G.selCard=null;
+  G.showTrick=false;G.trickMsg='';G.msg='';G.waiting=false;G.compThinking=false;
+  G.bidOrder=G.dealer==='player'?['comp','player']:['player','comp'];
+  G.bidStep=0;
+  G.phase=IS_BLIND()?'bidding_blind':'bidding';
+  if(G.bidOrder[0]==='comp'){
+    G.compThinking=true;render();
+    setTimeout(()=>{
+      if(IS_BLIND())
+        G.compBidVal=compBidBlind(G.compHand[0],G.playerHand[0],TR(),G.dealer==='comp',null);
+      else
+        G.compBidVal=compBid(G.compHand,TR(),N(),false,null,G.playerScore,G.compScore,ROUNDS_LEFT());
+      G.bidStep++;G.compThinking=false;render();
+    },1500+Math.random()*800);
+  }else render();
+}
+
+function playerBidNormal(bid){
+  if(G.compThinking)return;
+  G.playerBid=bid;G.bidStep++;
+  if(G.bidOrder[0]==='player'){
+    G.compThinking=true;render();
+    setTimeout(()=>{
+      const isDealer=G.dealer==='comp';
+      G.compBidVal=compBid(G.compHand,TR(),N(),isDealer,G.playerBid,G.playerScore,G.compScore,ROUNDS_LEFT());
+      G.bidStep++;G.compThinking=false;
+      beginPlaying();
+    },1500+Math.random()*800);
+  }else beginPlaying();
+}
+function playerBidBlind(bid){
+  if(G.compThinking)return;
+  G.playerBid=bid;G.bidStep++;
+  if(G.bidOrder[0]==='player'){
+    G.compThinking=true;render();
+    setTimeout(()=>{
+      G.compBidVal=compBidBlind(G.compHand[0],G.playerHand[0],TR(),G.dealer==='comp',G.playerBid);
+      G.bidStep++;G.compThinking=false;
+      beginPlaying();
+    },1500+Math.random()*800);
+  }else beginPlaying();
+}
+
+function beginPlaying(){
+  if(G.playerBid>G.compBidVal)G.leader='player';
+  else if(G.compBidVal>G.playerBid)G.leader='comp';
+  else G.leader=Math.random()<.5?'player':'comp';
+  G.phase='bids_locked';render();
+  setTimeout(()=>beginPlayingNow(),2200);
+}
+function beginPlayingNow(){
+  if(IS_BLIND()){
+    const pc=G.playerHand[0],cc=G.compHand[0];
+    G.trick=G.leader==='player'
+      ?[{who:'player',card:pc},{who:'comp',card:cc}]
+      :[{who:'comp',card:cc},{who:'player',card:pc}];
+    const w=trickWinner(G.trick,TR());
+    G.lastWinner=w;
+    if(w==='player')G.playerTricks=1;else G.compTricks=1;
+    G.handsDone=1;G.phase='blind_reveal';render();
+    setTimeout(()=>endRound(),3200);
+    return;
+  }
+  G.turn=G.leader;G.phase='playing';
+  G.msg=(G.leader==='player'?'You lead':'Computer leads')+' the first trick.';
+  render();
+  if(G.turn==='comp')setTimeout(doCompTurn,950);
+}
+function uiBidsLocked(){
+  const n=N(),trump=TR();
+  const pBid=G.playerBid,cBid=G.compBidVal;
+  const total=pBid+cBid;
+  const note=total===n?'Total bids equal cards dealt — someone must go wrong.'
+    :total>n?`Total bids (${total}) exceed cards (${n}) — not everyone can be right.`
+    :`Total bids (${total}) below cards (${n}) — someone will win more than they bid.`;
+  return`
+    ${scorebar()}
+    <div class="box" style="text-align:center">
+      <h2>Bids Locked In</h2>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:20px;margin:20px 0">
+        <div class="status-box" style="text-align:center">
+          <div class="lbl">Your Bid</div>
+          <div style="font-size:40px;font-weight:700;color:#fbbf24">${pBid}</div>
+        </div>
+        <div class="status-box" style="text-align:center">
+          <div class="lbl">Computer's Bid</div>
+          <div style="font-size:40px;font-weight:700;color:#fca5a5">${cBid}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;opacity:.45;margin-bottom:6px;color:#fdba74">${note}</div>
+      <div style="opacity:.35;font-size:11px">Starting play…</div>
+    </div>
+    <div class="box">
+      <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand</div>
+      <div class="row">${sortHand(G.playerHand).map(c=>cHTML(c)).join('')}</div>
+    </div>
+    ${histTable()}`;
+}
+function doCompTurn(){
+  if(G.phase!=='playing')return;
+  const card=compPlay(G.compHand,G.trick,TR(),G.compBidVal,G.compTricks);
+  G.compHand=G.compHand.filter(c=>c.id!==card.id);
+  G.trick.push({who:'comp',card});
+  if(G.trick.length===2)resolveHand();
+  else{G.turn='player';G.waiting=false;G.msg='Your turn.';render();}
+}
+function playerPlay(id){
+  if(G.turn!=='player'||G.waiting||G.showTrick)return;
+  const card=G.playerHand.find(c=>c.id===id);
+  if(!card)return;
+  if(G.trick.length>0){
+    const ls=G.trick[0].card.s;
+    if(G.playerHand.some(c=>c.s===ls)&&card.s!==ls){
+      G.msg='Must follow suit — play a '+SNAME[ls]+'.';render();return;
+    }
+  }
+  G.playerHand=G.playerHand.filter(c=>c.id!==id);
+  G.trick.push({who:'player',card});G.selCard=null;
+  if(G.trick.length===2)resolveHand();
+  else{G.turn='comp';G.waiting=true;G.msg='Computer is thinking…';render();setTimeout(doCompTurn,1100);}
+}
+function resolveHand(){
+  const w=trickWinner(G.trick,TR());
+  if(w==='player')G.playerTricks++;else G.compTricks++;
+  G.handsDone++;G.lastWinner=w;
+  G.showTrick=true;G.waiting=false;
+  G.trickMsg=w==='player'?'You win the trick.':'Computer wins the trick.';
+  render();
+  setTimeout(()=>{
+    G.showTrick=false;G.trick=[];
+    if(G.handsDone>=N())endRound();
+    else{
+      G.turn=w;G.msg=(w==='player'?'You lead':'Computer leads')+' next.';
+      render();if(G.turn==='comp')setTimeout(doCompTurn,950);
+    }
+  },1500);
+}
+function endRound(){
+  const pb=G.playerBid,pt=G.playerTricks,cb=G.compBidVal,ct=G.compTricks;
+  const pp=calcScore(pb,pt),cp=calcScore(cb,ct);
+  G.playerScore+=pp;G.compScore+=cp;
+  G.history.push({round:G.roundIdx+1,n:N(),trump:TR(),pb,pt,cb,ct,pp,cp});
+  G.phase='round_end';render();
+}
+function nextRoundSP(){
+  G.roundIdx++;G.dealer=G.dealer==='player'?'comp':'player';
+  if(G.roundIdx>=13){G.phase='game_end';render();return;}
+  startRound();
+}
+
+function render(){document.getElementById('content').innerHTML=buildUI();ev();}
+function buildUI(){
+  switch(G.phase){
+    case'start':return uiStart();
+    case'bidding':return uiBid();
+    case'bidding_blind':return uiBidBlind();
+    case'bids_locked':return uiBidsLocked();
+    case'playing':return uiPlay();
+    case'blind_reveal':return uiBlindReveal();
+    case'round_end':return uiRoundEnd();
+    case'game_end':return uiGameEnd();
+    default:return'';
+  }
+}
+
+function scorebar(){
+  return`<div class="box" style="padding:10px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="text-align:center;min-width:90px">
+        <div class="lbl">Your Score</div>
+        <div style="font-size:24px;font-weight:700;color:#fbbf24">${G.playerScore}</div>
+      </div>
+      <div style="text-align:center;opacity:.5;font-size:12px">
+        Round ${G.roundIdx+1} / 13<br>
+        <span style="color:${SC[TR()]}">${SYM[TR()]} ${SNAME[TR()]} trump</span>
+      </div>
+      <div style="text-align:center;min-width:90px">
+        <div class="lbl">Computer Score</div>
+        <div style="font-size:24px;font-weight:700;color:#fca5a5">${G.compScore}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function histTable(){
+  if(!G.history.length)return'';
+  const sorted=histNewestFirst?[...G.history].reverse():G.history;
+  const rows=sorted.map(h=>{
+    const pOk=h.pb===h.pt,cOk=h.cb===h.ct;
+    const pc=pOk?'#86efac':'#fca5a5',cc=cOk?'#86efac':'#fca5a5';
+    return`<tr>
+      <td>${h.round}</td>
+      <td>${h.n} cards</td>
+      <td style="color:${SC[h.trump]}">${SYM[h.trump]}</td>
+      <td style="color:${pc}">${h.pb} / ${h.pt}</td>
+      <td style="color:${pc}">${h.pp>0?'+'+h.pp:'—'}</td>
+      <td style="color:${cc}">${h.cb} / ${h.ct}</td>
+      <td style="color:${cc}">${h.cp>0?'+'+h.cp:'—'}</td>
+    </tr>`;
+  }).join('');
+  return`<div class="box" style="max-height:180px;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="lbl">History</div>
+      <button class="btn-sm" id="btn-hist-toggle">${histNewestFirst?'Newest first':'Oldest first'}</button>
+    </div>
+    <table>
+      <thead><tr><th>Rnd</th><th>Cards</th><th>Trump</th><th>You bid/won</th><th>Pts</th><th>Comp bid/won</th><th>Pts</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function trickStatus(){
+  const n=N();
+  const tricksRemain=n-G.handsDone;
+  const pNeed=G.playerBid-G.playerTricks;
+  const cNeed=G.compBidVal-G.compTricks;
+  let pColor,pNote;
+  if(G.playerTricks>G.playerBid){pColor='#fca5a5';pNote='Over bid';}
+  else if(tricksRemain<pNeed){pColor='#fca5a5';pNote='Can\'t reach bid';}
+  else{pColor='#86efac';pNote='On track';}
+  let cColor,cNote;
+  if(G.compTricks>G.compBidVal){cColor='#fca5a5';cNote='Over bid';}
+  else if(tricksRemain<cNeed){cColor='#fca5a5';cNote='Can\'t reach bid';}
+  else{cColor='#86efac';cNote='On track';}
+  return`<div class="status-row">
+    <div class="status-box">
+      <div class="lbl">You — bid ${G.playerBid}</div>
+      <div style="font-size:20px;font-weight:700;color:${pColor}">${G.playerTricks} won of ${G.playerBid} needed</div>
+      <div style="font-size:11px;opacity:.5;margin-top:3px">${pNote} · ${tricksRemain} trick${tricksRemain!==1?'s':''} remain</div>
+    </div>
+    <div class="status-box">
+      <div class="lbl">Computer — bid ${G.compBidVal}</div>
+      <div style="font-size:20px;font-weight:700;color:${cColor}">${G.compTricks} won of ${G.compBidVal} needed</div>
+      <div style="font-size:11px;opacity:.5;margin-top:3px">${cNote} · ${tricksRemain} trick${tricksRemain!==1?'s':''} remain</div>
+    </div>
+  </div>`;
+}
+
+function uiStart(){
+  return`<div style="text-align:center;padding-top:6px;max-width:560px;margin:0 auto">
+    <div class="sub">vs Computer</div>
+    <p style="opacity:.6;margin-bottom:40px;line-height:1.85;font-size:15px">
+      13 rounds · Ace high<br>
+      Trump rotates ♠ ♥ ♣ ♦ each round<br>
+      Nail your bid to score — miss it and get nothing
+    </p>
+    <button class="btn" id="btn-start" style="font-size:18px;padding:14px 48px;width:auto;display:inline-block">Start Game</button>
+    <div style="margin-top:32px;opacity:.35;font-size:12px;line-height:2">
+      Correct bid 0 → 10 pts &nbsp;·&nbsp; Correct bid N → N×10 pts &nbsp;·&nbsp; Wrong → 0
+    </div>
+    <div style="margin-top:26px"><button class="btn-sm" id="btn-menu-sp">← Back to Menu</button></div>
+  </div>`;
+}
+
+function uiBid(){
+  const n=N(),trump=TR();
+  const isDealer=G.dealer==='player';
+  const myTurn=!G.compThinking&&G.bidStep<2&&G.bidOrder[G.bidStep]==='player';
+  let forb=-1;
+  if(isDealer&&G.compBidVal!==null){forb=n-G.compBidVal;if(forb<0||forb>n)forb=-1;}
+  let bidsRow='';
+  if(G.compBidVal!==null)
+    bidsRow+=`<span style="background:rgba(252,165,165,.15);border-radius:6px;padding:4px 12px;font-size:13px;margin:2px;display:inline-block">Computer bid: <b>${G.compBidVal}</b></span>`;
+  if(G.playerBid!==null)
+    bidsRow+=`<span style="background:rgba(251,191,36,.12);border-radius:6px;padding:4px 12px;font-size:13px;margin:2px;display:inline-block">Your bid: <b>${G.playerBid}</b></span>`;
+  let bidUI='';
+  if(G.compThinking){
+    bidUI=thinkingDots('Computer is thinking about its bid…');
+  }else if(myTurn){
+    let note='';
+    if(isDealer&&forb>=0)
+      note=`<div style="opacity:.55;font-size:12px;margin-bottom:8px">Cannot bid ${forb} — dealer rule</div>`;
+    const btns=[];
+    for(let i=0;i<=n;i++){
+      const dis=isDealer&&i===forb;
+      btns.push(`<button class="bid-btn${dis?' off':''}" ${dis?'disabled':''} data-bid="${i}">${i}</button>`);
+    }
+    bidUI=`<div>${note}<div style="margin-top:4px">${btns.join('')}</div></div>`;
+  }else if(!myTurn&&G.bidStep<2){
+    bidUI=`<div style="opacity:.5;font-size:13px">Waiting…</div>`;
+  }
+  return`
+    ${scorebar()}
+    <div class="box">
+      <h2>Round ${G.roundIdx+1} — Bidding</h2>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div style="text-align:center"><div class="lbl">Cards</div><div style="font-size:28px;font-weight:700">${n}</div></div>
+        <div style="text-align:center"><div class="lbl">Trump</div><div style="font-size:20px;font-weight:700;color:${SC[trump]}">${SYM[trump]} ${SNAME[trump]}</div></div>
+        <div style="text-align:center"><div class="lbl">Dealer</div><div style="font-weight:600">${G.dealer==='player'?'You':'Computer'}</div></div>
+        <div style="text-align:center"><div class="lbl">Bids first</div><div style="font-weight:600">${G.bidOrder[0]==='player'?'You':'Computer'}</div></div>
+      </div>
+      <div style="text-align:center;min-height:32px;margin-bottom:12px">${bidsRow}</div>
+      <div style="text-align:center">${bidUI}</div>
+    </div>
+    <div class="box">
+      <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand</div>
+      <div class="row">${sortHand(G.playerHand).map(c=>cHTML(c)).join('')}</div>
+    </div>
+    ${histTable()}`;
+}
+
+function uiBidBlind(){
+  const trump=TR();
+  const compCard=G.compHand[0];
+  const compFirst=G.bidOrder[0]==='comp';
+  const playerTurn=!G.compThinking&&(compFirst?G.bidStep===1:G.bidStep===0);
+  let compBidInfo='';
+  if(G.compBidVal!==null)
+    compBidInfo=`<span style="background:rgba(252,165,165,.15);border-radius:6px;padding:4px 12px;font-size:13px">Computer bid: <b>${G.compBidVal}</b></span>`;
+  let bidUI='';
+  if(G.compThinking){
+    bidUI=thinkingDots('Computer is thinking about its bid…');
+  }else if(playerTurn){
+    bidUI=`<div>
+      <div style="opacity:.5;font-size:12px;margin-bottom:8px">Bid 0 or 1</div>
+      <button class="bid-btn" data-bidb="0">0</button>
+      <button class="bid-btn" data-bidb="1">1</button>
+    </div>`;
+  }else if(G.playerBid===null){
+    bidUI=`<div style="opacity:.5;font-size:13px">${compFirst?'Computer bid '+G.compBidVal+'. Your turn…':'Computer is deciding…'}</div>`;
+  }
+  return`
+    ${scorebar()}
+    <div class="warn">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">Blind Round — 1 card each</div>
+      <div style="opacity:.7;font-size:13px;line-height:1.7">
+        Your card faces outward — you see the Computer's card but not your own.<br>
+        The Computer sees your card but not its own.<br>
+        Trump: <span style="color:${SC[trump]};font-weight:700">${SYM[trump]} ${SNAME[trump]}</span>
+      </div>
+    </div>
+    <div class="box">
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:24px">
+        <div style="text-align:center">
+          <div class="lbl">Computer's card — you see it</div>
+          ${cHTML(compCard)}
+        </div>
+        <div style="text-align:center">
+          <div class="lbl">Your card — hidden from you</div>
+          <div class="card-back"></div>
+        </div>
+      </div>
+    </div>
+    <div class="box" style="text-align:center">
+      <div style="margin-bottom:10px">${compBidInfo}</div>
+      <div class="lbl" style="margin-bottom:6px">Your Bid</div>
+      ${bidUI}
+    </div>
+    ${histTable()}`;
+}
+
+function uiBlindReveal(){
+  const pc=G.trick.find(p=>p.who==='player').card;
+  const cc=G.trick.find(p=>p.who==='comp').card;
+  const w=G.lastWinner;
+  return`
+    ${scorebar()}
+    <div class="box" style="text-align:center">
+      <h2>Cards Revealed</h2>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:24px;margin:20px 0">
+        <div style="text-align:center"><div class="lbl">Your card</div>${cHTML(pc)}</div>
+        <div style="text-align:center"><div class="lbl">Computer's card</div>${cHTML(cc)}</div>
+      </div>
+      <div style="font-size:17px;font-weight:700;color:${w==='player'?'#86efac':'#fca5a5'};margin-bottom:8px">
+        ${w==='player'?'You win the trick.':'Computer wins the trick.'}
+      </div>
+      <div style="opacity:.4;font-size:12px">Advancing to results…</div>
+    </div>
+    ${histTable()}`;
+}
+
+function uiPlay(){
+  const n=N(),trump=TR();
+  const ls=G.trick.length?G.trick[0].card.s:null;
+  let pTC='',cTC='';
+  G.trick.forEach(p=>{if(p.who==='player')pTC=cHTML(p.card);else cTC=cHTML(p.card);});
+  if(!pTC)pTC='<div class="slot"></div>';
+  if(!cTC)cTC='<div class="slot"></div>';
+  const handCards=sortHand(G.playerHand).map(c=>{
+    const mustFollow=ls&&G.playerHand.some(x=>x.s===ls);
+    const illegal=mustFollow&&c.s!==ls;
+    const canPlay=G.turn==='player'&&!G.showTrick&&!G.waiting;
+    if(!canPlay)return cHTML(c,{dim:true});
+    return cHTML(c,{bad:illegal,click:!illegal,sel:G.selCard===c.id});
+  }).join('');
+  const trickMsg=G.showTrick?`<div style="text-align:center;font-size:15px;font-weight:700;color:#fbbf24;padding:6px">${G.trickMsg}</div>`:'';
+  return`
+    ${scorebar()}
+    <div class="box">
+      <h2>Round ${G.roundIdx+1} — Playing</h2>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div style="text-align:center"><div class="lbl">Trump</div><div style="color:${SC[trump]};font-weight:700;font-size:15px">${SYM[trump]} ${SNAME[trump]}</div></div>
+        <div style="text-align:center"><div class="lbl">Trick</div><div style="font-weight:700;font-size:15px">${G.handsDone+1} / ${n}</div></div>
+      </div>
+      ${trickStatus()}
+    </div>
+    <div class="box">
+      <div class="lbl" style="text-align:center;margin-bottom:4px">
+        Current Trick${ls?' — Lead suit: '+SYM[ls]+' '+SNAME[ls]:''}
+      </div>
+      <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 0">
+        <div style="text-align:center"><div class="lbl">Computer</div>${cTC}</div>
+        <div style="font-size:20px;opacity:.2">⚔</div>
+        <div style="text-align:center"><div class="lbl">You</div>${pTC}</div>
+      </div>
+      ${trickMsg}
+      <div class="msg">${G.showTrick?'':G.msg}</div>
+    </div>
+    <div class="box">
+      <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand (${G.playerHand.length} card${G.playerHand.length!==1?'s':''})</div>
+      <div class="row">${handCards}</div>
+      ${G.selCard?`<div style="text-align:center;margin-top:10px"><button class="btn" id="btn-play" style="width:auto;display:inline-block">Play Card</button></div>`:''}
+    </div>
+    ${histTable()}`;
+}
+
+function uiRoundEnd(){
+  const h=G.history[G.history.length-1];
+  const pOk=h.pb===h.pt,cOk=h.cb===h.ct;
+  return`
+    ${scorebar()}
+    <div class="box" style="text-align:center">
+      <h2>Round ${h.round} Complete</h2>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:24px;margin:24px 0">
+        <div>
+          <div class="lbl" style="margin-bottom:8px">You</div>
+          <div style="font-size:15px;opacity:.8;margin-bottom:6px">Bid <b>${h.pb}</b> &nbsp;·&nbsp; Won <b>${h.pt}</b></div>
+          <div style="font-size:20px;font-weight:700;color:${pOk?'#86efac':'#fca5a5'}">
+            ${pOk?`Correct &nbsp;+${h.pp} pts`:'Incorrect'}
+          </div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div>
+          <div class="lbl" style="margin-bottom:8px">Computer</div>
+          <div style="font-size:15px;opacity:.8;margin-bottom:6px">Bid <b>${h.cb}</b> &nbsp;·&nbsp; Won <b>${h.ct}</b></div>
+          <div style="font-size:20px;font-weight:700;color:${cOk?'#86efac':'#fca5a5'}">
+            ${cOk?`Correct &nbsp;+${h.cp} pts`:'Incorrect'}
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:22px">
+        <div class="lbl" style="margin-bottom:6px">Running Total</div>
+        <div style="font-size:18px">You: <b style="color:#fbbf24">${G.playerScore}</b> &nbsp;·&nbsp; Computer: <b style="color:#fca5a5">${G.compScore}</b></div>
+      </div>
+      ${G.roundIdx<12?`<button class="btn" id="btn-next" style="width:auto;display:inline-block">Next Round →</button>`:`<button class="btn" id="btn-next" style="width:auto;display:inline-block">See Final Results →</button>`}
+    </div>
+    ${histTable()}`;
+}
+
+function uiGameEnd(){
+  const pWin=G.playerScore>G.compScore,tie=G.playerScore===G.compScore;
+  return`
+    <div class="box" style="text-align:center;padding:40px 20px;max-width:700px;margin-top:20px">
+      <div style="font-size:30px;font-weight:700;margin-bottom:22px">${tie?'It\'s a Tie! 🤝':pWin?'You Win! 🏆':'Computer Wins! 🤖'}</div>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:28px;margin-bottom:30px">
+        <div><div class="lbl">Your Score</div><div style="font-size:52px;font-weight:700;color:#fbbf24">${G.playerScore}</div></div>
+        <div><div class="lbl">Computer Score</div><div style="font-size:52px;font-weight:700;color:#fca5a5">${G.compScore}</div></div>
+      </div>
+      <button class="btn" id="btn-restart" style="font-size:17px;padding:12px 40px;width:auto;display:inline-block">Play Again</button>
+      <div style="margin-top:18px"><button class="btn-sm" id="btn-menu-end">← Back to Menu</button></div>
+    </div>
+    ${histTable()}`;
+}
+
+function ev(){
+  const $=id=>document.getElementById(id);
+  const bs=$('btn-start');if(bs)bs.onclick=()=>{initGame();startRound();};
+  const bn=$('btn-next');if(bn)bn.onclick=nextRoundSP;
+  const br=$('btn-restart');if(br)br.onclick=()=>{initGame();G.phase='start';render();};
+  const ht=$('btn-hist-toggle');if(ht)ht.onclick=()=>{histNewestFirst=!histNewestFirst;render();};
+  const bm1=$('btn-menu-sp');if(bm1)bm1.onclick=showModeSelect;
+  const bm2=$('btn-menu-end');if(bm2)bm2.onclick=showModeSelect;
+  document.querySelectorAll('[data-bid]').forEach(b=>{b.onclick=()=>playerBidNormal(+b.dataset.bid);});
+  document.querySelectorAll('[data-bidb]').forEach(b=>{b.onclick=()=>playerBidBlind(+b.dataset.bidb);});
+  document.querySelectorAll('[data-cid]').forEach(c=>{
+    c.onclick=()=>{
+      if(G.turn!=='player'||G.waiting||G.showTrick)return;
+      const id=c.dataset.cid;
+      const card=G.playerHand.find(x=>x.id===id);
+      if(!card)return;
+      if(G.trick.length>0){
+        const ls=G.trick[0].card.s;
+        if(G.playerHand.some(x=>x.s===ls)&&card.s!==ls){
+          G.msg='Must follow suit — play a '+SNAME[ls]+'.';render();return;
+        }
+      }
+      G.selCard=G.selCard===id?null:id;G.msg='';render();
+    };
+  });
+  const bp=$('btn-play');if(bp)bp.onclick=()=>{if(G.selCard)playerPlay(G.selCard);};
+}
+
+// ════════════════════════════════════════════════════════════
+// MULTIPLAYER (Play Online)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL='https://hneqxqpqornxeihjlvse.supabase.co';
+const SUPABASE_KEY='sb_publishable_dOIEwSLk31asobhTr4FLKA_t8Q-t5Ep';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let myUserId=null;
+let gameState=null;
+let realtimeChannel=null;
+let isBusy=false;
+let pollInterval=null;
+
+async function boot(){
+  mpRender('connecting');
+  const{data,error}=await sb.auth.signInAnonymously();
+  if(error){mpRender('boot_error',{error});return;}
+  myUserId=data.user.id;
+  mpRender('home');
+}
+
+async function doCreateRoom(){
+  mpRender('working',{msg:'Creating room...'});
+  const{data,error}=await sb.rpc('create_room');
+  if(error||!data.ok){mpRender('home',{error:error?error.message:data.error});return;}
+  gameState={...data,status:'waiting'};
+  subscribeToGame(data.game_id);
+  mpRender('waiting_room');
+}
+
+async function doJoinRoom(code){
+  if(!code||code.trim().length===0){mpRender('home',{error:'Type a room code first.'});return;}
+  mpRender('working',{msg:'Joining room...'});
+  const{data,error}=await sb.rpc('join_room',{p_room_code:code.trim()});
+  if(error||!data.ok){mpRender('home',{error:error?error.message:friendlyError(data.error)});return;}
+  gameState=data;
+  subscribeToGame(data.game_id);
+  mpRenderForState();
+}
+
+async function doSubmitBid(bid){
+  if(isBusy)return;
+  isBusy=true;
+  const isBlind=gameState.status==='bidding_blind';
+  const fn=isBlind?'submit_bid_blind':'submit_bid';
+  const{data,error}=await sb.rpc(fn,{p_game_id:gameState.game_id,p_bid:bid});
+  isBusy=false;
+  if(error){console.warn(error);mpRenderForState();return;}
+  if(!data.ok){console.warn(data.error);mpRenderForState();return;}
+  gameState=data;
+  mpRenderForState();
+}
+
+async function doPlayCard(cardId){
+  if(isBusy)return;
+  isBusy=true;
+  mpRender(mpCurrentView());
+  const{data,error}=await sb.rpc('play_card',{p_game_id:gameState.game_id,p_card_id:cardId});
+  isBusy=false;
+  if(error){console.warn(error);mpRenderForState();return;}
+  if(!data.ok){console.warn(data.error);mpRenderForState();return;}
+  gameState=data;
+  mpRenderForState();
+}
+
+async function doNextRound(){
+  if(isBusy)return;
+  isBusy=true;
+  const{data,error}=await sb.rpc('next_round',{p_game_id:gameState.game_id});
+  isBusy=false;
+  if(error){console.warn(error);mpRenderForState();return;}
+  if(!data.ok){console.warn(data.error);mpRenderForState();return;}
+  gameState=data;
+  mpRenderForState();
+}
+
+function mpCurrentView(){
+  if(!gameState)return'home';
+  if(gameState.status==='bidding'||gameState.status==='bidding_blind')return'bidding';
+  if(gameState.status==='playing')return'playing';
+  if(gameState.status==='round_end')return'round_end';
+  if(gameState.status==='game_end')return'game_end';
+  return'home';
+}
+
+function friendlyError(code){
+  const map={
+    ROOM_NOT_FOUND:"That room code doesn't exist. Double-check it and try again.",
+    ROOM_FULL:'That room already has two players in it.',
+    ALREADY_IN_ROOM_AS_P1:"You're already the host of that room.",
+    NOT_AUTHENTICATED:'Connection issue — try refreshing the page.',
+    NOT_YOUR_TURN:"It's not your turn yet.",
+    BID_OUT_OF_RANGE:'That bid is out of range.',
+    INVALID_DEALER_BID:"As dealer, you can't bid that number — it would let both players be right.",
+    BOTH_ALREADY_BID:'Bidding for this round is already done.',
+    WRONG_PHASE:"That action isn't available right now.",
+    CARD_NOT_IN_HAND:"That card isn't in your hand.",
+    MUST_FOLLOW_SUIT:"You have to follow suit."
+  };
+  return map[code]||code;
+}
+
+function subscribeToGame(gameId){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  if(pollInterval)clearInterval(pollInterval);
+
+  realtimeChannel=sb
+    .channel('game-'+gameId)
+    .on('postgres_changes',
+      {event:'UPDATE',schema:'public',table:'games',filter:`id=eq.${gameId}`},
+      async()=>{
+        const{data,error}=await sb.rpc('get_state',{p_game_id:gameId});
+        if(!error&&data.ok){gameState=data;mpRenderForState();}
+      }
+    )
+    .subscribe();
+
+  pollInterval=setInterval(async()=>{
+    if(isBusy)return;
+    const{data,error}=await sb.rpc('get_state',{p_game_id:gameId});
+    if(!error&&data.ok){
+      const changed=JSON.stringify(data)!==JSON.stringify(gameState);
+      if(changed){gameState=data;mpRenderForState();}
+    }
+  },3000);
+}
+
+function cardHtml(cardId,opts={}){
+  if(!cardId)return`<div class="slot"></div>`;
+  if(cardId==='HIDDEN'){
+    return`<div class="card" style="background:repeating-linear-gradient(135deg,#1e3a8a 0,#1e3a8a 8px,#1d4ed8 8px,#1d4ed8 16px);border-color:#555"></div>`;
+  }
+  const suit=cardId.slice(-1);
+  const value=cardId.slice(0,-1);
+  const color=RED[suit]?'#b91c1c':'#111';
+  let cls='card';
+  if(opts.clickable)cls+=' clickable';
+  if(opts.dim)cls+=' dim';
+  const click=opts.clickable?`onclick="doPlayCard('${cardId}')"`:'';
+  return`<div class="${cls}" style="color:${color}" ${click}><div class="cv">${value}</div><div class="cs">${SYM[suit]}</div></div>`;
+}
+
+function mpRenderForState(){
+  if(!gameState)return;
+  mpRender(mpCurrentView());
+}
+
+function mpRender(view,opts={}){
+  const c=document.getElementById('content');
+  switch(view){
+
+    case'connecting':
+      c.innerHTML=`<div class="box" style="max-width:480px"><div class="status-msg"><span class="spinner"></span>Connecting...</div></div>`;
+      break;
+
+    case'boot_error':
+      c.innerHTML=`<div class="box" style="max-width:480px">
+        <div class="error">Couldn't connect: ${escapeHtml(opts.error.message)}</div>
+        <button class="btn" onclick="boot()" style="width:auto;display:inline-block">Retry</button>
+      </div>`;
+      break;
+
+    case'working':
+      c.innerHTML=`<div class="box" style="max-width:480px"><div class="status-msg"><span class="spinner"></span>${opts.msg}</div></div>`;
+      break;
+
+    case'home':
+      c.innerHTML=`
+        <div class="box" style="max-width:480px">
+          <div class="sub" style="margin-bottom:6px">Online Multiplayer</div>
+          <button class="btn" id="btn-create">Create Room</button>
+          <div class="divider"><span>or</span></div>
+          <input id="join-input" placeholder="Enter room code" maxlength="6"/>
+          <button class="btn btn-outline" id="btn-join">Join Room</button>
+          ${opts.error?`<div class="error">${escapeHtml(opts.error)}</div>`:''}
+        </div>
+        <div style="text-align:center;max-width:480px;width:100%"><button class="btn-sm" id="btn-mp-menu">← Back to Menu</button></div>
+        <div class="debug" style="max-width:480px">Signed in as: ${myUserId}</div>
+      `;
+      document.getElementById('btn-create').onclick=doCreateRoom;
+      document.getElementById('btn-join').onclick=()=>doJoinRoom(document.getElementById('join-input').value);
+      document.getElementById('join-input').addEventListener('keydown',(e)=>{if(e.key==='Enter')doJoinRoom(e.target.value);});
+      document.getElementById('btn-mp-menu').onclick=showModeSelect;
+      break;
+
+    case'waiting_room':
+      c.innerHTML=`
+        <div class="box" style="max-width:480px">
+          <div class="lbl">Share this code with your opponent</div>
+          <div class="room-code">${gameState.room_code}</div>
+          <div class="status-msg"><span class="spinner"></span>Waiting for them to join...</div>
+        </div>
+      `;
+      break;
+
+    case'bidding':
+      mpRenderBidding(c);
+      break;
+
+    case'playing':
+      mpRenderPlaying(c);
+      break;
+
+    case'round_end':
+      mpRenderRoundEnd(c);
+      break;
+
+    case'game_end':
+      mpRenderGameEnd(c);
+      break;
+  }
+}
+
+function mpRenderBidding(c){
+  const g=gameState;
+  const isBlind=g.status==='bidding_blind';
+  const mySlot=g.my_slot;
+  const myBid=mySlot==='p1'?g.p1_bid:g.p2_bid;
+  const oppBid=mySlot==='p1'?g.p2_bid:g.p1_bid;
+  const isDealer=g.dealer===mySlot;
+  const n=g.round_size;
+
+  let myTurn=false;
+  for(const slot of g.bid_order){
+    const bidVal=slot==='p1'?g.p1_bid:g.p2_bid;
+    if(bidVal===null){myTurn=(slot===mySlot);break;}
+  }
+
+  let forbidden=-1;
+  if(isDealer&&oppBid!==null){
+    const maxBid=isBlind?1:n;
+    const f=maxBid-oppBid;
+    if(f>=0&&f<=maxBid)forbidden=f;
+  }
+
+  let bidsRow='';
+  if(oppBid!==null)bidsRow+=`<span class="chip" style="background:rgba(252,165,165,.18)">Opponent bid: <b>${oppBid}</b></span> `;
+  if(myBid!==null)bidsRow+=`<span class="chip" style="background:rgba(251,191,36,.15)">Your bid: <b>${myBid}</b></span>`;
+
+  let bidButtonsHtml='';
+  if(myTurn&&myBid===null&&!isBusy){
+    const maxBid=isBlind?1:n;
+    let btns='';
+    for(let i=0;i<=maxBid;i++){
+      const dis=isDealer&&i===forbidden;
+      btns+=`<button class="bid-btn${dis?' off':''}" ${dis?'disabled':''} onclick="doSubmitBid(${i})">${i}</button>`;
+    }
+    bidButtonsHtml=`
+      ${isDealer&&forbidden>=0?`<div style="opacity:.55;font-size:12px;margin:6px 0">Can't bid ${forbidden} — dealer rule</div>`:''}
+      <div>${btns}</div>
+    `;
+  }else if(myBid!==null){
+    bidButtonsHtml=`<div class="status-msg">Waiting for opponent's bid...</div>`;
+  }else{
+    bidButtonsHtml=`<div class="status-msg">Opponent is bidding first...</div>`;
+  }
+
+  let handSection='';
+  if(isBlind){
+    handSection=`
+      <div class="box" style="max-width:480px">
+        <div class="lbl" style="text-align:center;margin-bottom:6px">Blind Round — Your card faces outward</div>
+        <div style="text-align:center;opacity:.65;font-size:12px;margin-bottom:10px">
+          You see your opponent's card. They see yours. Neither of you sees your own.
+        </div>
+        <div style="display:flex;justify-content:space-around">
+          <div style="text-align:center"><div class="lbl">Opponent's card</div>${cardHtml(g.opponent_card)}</div>
+          <div style="text-align:center"><div class="lbl">Your card (hidden)</div>${cardHtml('HIDDEN')}</div>
+        </div>
+      </div>
+    `;
+  }else{
+    const cardsHtml=g.my_hand.map((cid)=>cardHtml(cid)).join('');
+    handSection=`
+      <div class="box" style="max-width:480px">
+        <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand</div>
+        <div class="row">${cardsHtml}</div>
+      </div>
+    `;
+  }
+
+  c.innerHTML=`
+    <div class="box" style="max-width:480px">
+      <div class="lbl" style="text-align:center">Round ${g.round_idx+1} of 13 — Bidding</div>
+      <div style="display:flex;justify-content:space-around;margin:12px 0;flex-wrap:wrap;gap:10px">
+        <div style="text-align:center"><div class="lbl">Cards</div><div style="font-size:22px;font-weight:700">${n}</div></div>
+        <div style="text-align:center"><div class="lbl">Trump</div><div style="font-size:18px;font-weight:700">${SYM[g.trump]} ${SNAME[g.trump]}</div></div>
+        <div style="text-align:center"><div class="lbl">Dealer</div><div style="font-weight:600">${isDealer?'You':'Opponent'}</div></div>
+      </div>
+      <div style="text-align:center;margin-bottom:8px">${bidsRow}</div>
+      <div style="text-align:center">${bidButtonsHtml}</div>
+    </div>
+    ${handSection}
+    <div style="display:flex;justify-content:space-around;font-size:13px;opacity:.6;margin-top:4px;max-width:480px;width:100%">
+      <div>You: ${g.my_slot==='p1'?g.p1_score:g.p2_score} pts</div>
+      <div>Opponent: ${g.my_slot==='p1'?g.p2_score:g.p1_score} pts</div>
+    </div>
+  `;
+}
+
+function mpRenderPlaying(c){
+  const g=gameState;
+  const mySlot=g.my_slot;
+  const myBid=mySlot==='p1'?g.p1_bid:g.p2_bid;
+  const oppBid=mySlot==='p1'?g.p2_bid:g.p1_bid;
+  const myTricks=mySlot==='p1'?g.p1_tricks:g.p2_tricks;
+  const oppTricks=mySlot==='p1'?g.p2_tricks:g.p1_tricks;
+  const myTurn=g.turn===mySlot&&!isBusy;
+  const n=g.round_size;
+  const tricksRemain=n-g.hands_done;
+  const myNeed=myBid-myTricks;
+  const oppNeed=oppBid-oppTricks;
+  let myStatusColor,myStatusNote;
+  if(myTricks>myBid){myStatusColor='#fca5a5';myStatusNote='Over bid';}
+  else if(tricksRemain<myNeed){myStatusColor='#fca5a5';myStatusNote="Can't reach bid";}
+  else{myStatusColor='#86efac';myStatusNote='On track';}
+  let oppStatusColor,oppStatusNote;
+  if(oppTricks>oppBid){oppStatusColor='#fca5a5';oppStatusNote='Over bid';}
+  else if(tricksRemain<oppNeed){oppStatusColor='#fca5a5';oppStatusNote="Can't reach bid";}
+  else{oppStatusColor='#86efac';oppStatusNote='On track';}
+
+  let leadSuit=null,myTrickCard=null,oppTrickCard=null;
+  if(g.trick&&g.trick.length>0){
+    leadSuit=g.trick[0].card_id.slice(-1);
+    for(const play of g.trick){
+      if(play.slot===mySlot)myTrickCard=play.card_id;
+      else oppTrickCard=play.card_id;
+    }
+  }
+
+  const hasLeadSuit=leadSuit?g.my_hand.some((cid)=>cid.slice(-1)===leadSuit):false;
+
+  const handCards=g.my_hand.map((cid)=>{
+    const suit=cid.slice(-1);
+    const illegal=leadSuit&&hasLeadSuit&&suit!==leadSuit;
+    const canPlay=myTurn&&!illegal;
+    return cardHtml(cid,{clickable:canPlay,dim:!canPlay});
+  }).join('');
+
+  let statusMsg=isBusy
+    ?'Playing your card...'
+    :(myTurn
+        ?(g.trick.length===0?'Your turn to lead — play any card.':'Your turn — play a card.')
+        :"Opponent's turn...");
+
+  let lastTrickBanner='';
+  if(g.last_trick){
+    const winnerIsMe=g.last_trick.winner===mySlot;
+    lastTrickBanner=`
+      <div style="text-align:center;font-size:13px;opacity:.6;margin-bottom:6px">
+        Last trick: ${winnerIsMe?'You won':'Opponent won'} (${g.last_trick.winning_card})
+      </div>
+    `;
+  }
+
+  c.innerHTML=`
+    <div class="box" style="max-width:480px">
+      <div class="lbl" style="text-align:center">Round ${g.round_idx+1} of 13 — Trick ${g.hands_done+1} of ${n}</div>
+      <div style="text-align:center;margin:8px 0">
+        <span class="chip" style="background:rgba(255,255,255,.08)">Trump: ${SYM[g.trump]} ${SNAME[g.trump]}</span>
+      </div>
+      <div style="display:flex;justify-content:space-around;gap:10px;flex-wrap:wrap;margin:10px 0">
+        <div class="prog-box">
+          <div class="lbl">You — bid ${myBid}</div>
+          <div style="font-size:18px;font-weight:700">${myTricks} won</div>
+          <div style="font-size:11px;color:${myStatusColor};font-weight:600;margin-top:2px">${myStatusNote}</div>
+          <div style="font-size:11px;opacity:.5">${tricksRemain} trick${tricksRemain!==1?'s':''} remain</div>
+        </div>
+        <div class="prog-box">
+          <div class="lbl">Opponent — bid ${oppBid}</div>
+          <div style="font-size:18px;font-weight:700">${oppTricks} won</div>
+          <div style="font-size:11px;color:${oppStatusColor};font-weight:600;margin-top:2px">${oppStatusNote}</div>
+          <div style="font-size:11px;opacity:.5">${tricksRemain} trick${tricksRemain!==1?'s':''} remain</div>
+        </div>
+      </div>
+    </div>
+    <div class="box" style="max-width:480px">
+      ${lastTrickBanner}
+      <div class="lbl" style="text-align:center;margin-bottom:6px">
+        Current Trick${leadSuit?' — Lead: '+SYM[leadSuit]+' '+SNAME[leadSuit]:''}
+      </div>
+      <div style="display:flex;justify-content:space-around;align-items:center;padding:8px 0">
+        <div style="text-align:center"><div class="lbl">Opponent</div>${cardHtml(oppTrickCard)}</div>
+        <div style="font-size:20px;opacity:.2">⚔</div>
+        <div style="text-align:center"><div class="lbl">You</div>${cardHtml(myTrickCard)}</div>
+      </div>
+      <div class="status-msg">${statusMsg}</div>
+    </div>
+    <div class="box" style="max-width:480px">
+      <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand (${g.my_hand.length})</div>
+      <div class="row">${handCards}</div>
+    </div>
+  `;
+}
+
+function mpRenderRoundEnd(c){
+  const g=gameState;
+  const mySlot=g.my_slot;
+  const h=g.history[g.history.length-1];
+  const myBid=mySlot==='p1'?h.p1_bid:h.p2_bid;
+  const myWon=mySlot==='p1'?h.p1_won:h.p2_won;
+  const oppBid=mySlot==='p1'?h.p2_bid:h.p1_bid;
+  const oppWon=mySlot==='p1'?h.p2_won:h.p1_won;
+  const myOk=myBid===myWon;
+  const oppOk=oppBid===oppWon;
+  const myPts=myOk?(myBid===0?10:myBid*10):0;
+  const oppPts=oppOk?(oppBid===0?10:oppBid*10):0;
+
+  const myScore=mySlot==='p1'?g.p1_score:g.p2_score;
+  const oppScore=mySlot==='p1'?g.p2_score:g.p1_score;
+
+  const myReady=g.my_ready_next;
+  const oppReady=g.opponent_ready_next;
+  const isLastRound=g.round_idx===12;
+
+  let readyButtonHtml='';
+  if(myReady){
+    readyButtonHtml=`<div class="status-msg"><span class="spinner"></span>Waiting for opponent...</div>`;
+  }else{
+    readyButtonHtml=`<button class="btn" onclick="doNextRound()" style="width:auto;display:inline-block" ${isBusy?'disabled':''}>${isLastRound?'See Final Results':'Next Round'}</button>`;
+  }
+  if(oppReady&&!myReady){
+    readyButtonHtml=`<div class="status-msg" style="color:#fbbf24;margin-bottom:6px">Opponent is ready</div>`+readyButtonHtml;
+  }
+
+  c.innerHTML=`
+    <div class="box" style="text-align:center;max-width:700px">
+      <div class="lbl" style="margin-bottom:14px">Round ${h.round} Complete</div>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:24px;margin:24px 0">
+        <div>
+          <div class="lbl" style="margin-bottom:8px">You</div>
+          <div style="font-size:15px;opacity:.8;margin-bottom:6px">Bid <b>${myBid}</b> &nbsp;·&nbsp; Won <b>${myWon}</b></div>
+          <div style="font-size:20px;font-weight:700;color:${myOk?'#86efac':'#fca5a5'}">
+            ${myOk?`Correct &nbsp;+${myPts} pts`:'Incorrect'}
+          </div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div>
+          <div class="lbl" style="margin-bottom:8px">Opponent</div>
+          <div style="font-size:15px;opacity:.8;margin-bottom:6px">Bid <b>${oppBid}</b> &nbsp;·&nbsp; Won <b>${oppWon}</b></div>
+          <div style="font-size:20px;font-weight:700;color:${oppOk?'#86efac':'#fca5a5'}">
+            ${oppOk?`Correct &nbsp;+${oppPts} pts`:'Incorrect'}
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:22px">
+        <div class="lbl" style="margin-bottom:6px">Running Total</div>
+        <div style="font-size:18px">You: <b style="color:#fbbf24">${myScore}</b> &nbsp;·&nbsp; Opponent: <b style="color:#fca5a5">${oppScore}</b></div>
+      </div>
+      ${readyButtonHtml}
+    </div>
+  `;
+}
+
+function mpRenderGameEnd(c){
+  const g=gameState;
+  const mySlot=g.my_slot;
+  const myScore=mySlot==='p1'?g.p1_score:g.p2_score;
+  const oppScore=mySlot==='p1'?g.p2_score:g.p1_score;
+  const iWin=myScore>oppScore;
+  const tie=myScore===oppScore;
+  const headline=tie?"It's a Tie! 🤝":(iWin?'You Win! 🏆':'Opponent Wins');
+
+  c.innerHTML=`
+    <div class="box" style="text-align:center;padding:40px 20px;max-width:700px">
+      <div style="font-size:30px;font-weight:700;margin-bottom:22px">${headline}</div>
+      <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:28px;margin-bottom:30px">
+        <div><div class="lbl">Your Score</div><div style="font-size:52px;font-weight:700;color:#fbbf24">${myScore}</div></div>
+        <div><div class="lbl">Opponent Score</div><div style="font-size:52px;font-weight:700;color:#fca5a5">${oppScore}</div></div>
+      </div>
+      <div style="opacity:.5;font-size:12px;margin-bottom:18px">Rematch / play-again flow coming later.</div>
+      <button class="btn-sm" id="btn-mp-menu-end">← Back to Menu</button>
+    </div>
+  `;
+  document.getElementById('btn-mp-menu-end').onclick=showModeSelect;
+}
+
+function escapeHtml(s){
+  const div=document.createElement('div');
+  div.textContent=s;
+  return div.innerHTML;
+}
+
+// ════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════
+showModeSelect();
+</script>
+</body>
+</html>
