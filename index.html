@@ -72,7 +72,7 @@ input::placeholder{color:rgba(255,255,255,.35);letter-spacing:1px;text-transform
 </style>
 </head>
 <body>
-<div class="version-tag">v1.0</div>
+<div class="version-tag">v1.1</div>
 <div id="app">
   <h1>⚜ Judgement</h1>
   <div id="content"></div>
@@ -393,12 +393,13 @@ function playerPlay(id){
 }
 function resolveHand(){
   const w=trickWinner(G.trick,TR());
-  if(w==='player')G.playerTricks++;else G.compTricks++;
-  G.handsDone++;G.lastWinner=w;
+  G.lastWinner=w;
   G.showTrick=true;G.waiting=false;
   G.trickMsg=w==='player'?'You win the trick.':'Computer wins the trick.';
   render();
   setTimeout(()=>{
+    if(w==='player')G.playerTricks++;else G.compTricks++;
+    G.handsDone++;
     G.showTrick=false;G.trick=[];
     if(G.handsDone>=N())endRound();
     else{
