@@ -72,7 +72,7 @@ input::placeholder{color:rgba(255,255,255,.35);letter-spacing:1px;text-transform
 </style>
 </head>
 <body>
-<div class="version-tag">v1.1</div>
+<div class="version-tag">v1.2</div>
 <div id="app">
   <h1>⚜ Judgement</h1>
   <div id="content"></div>
@@ -842,6 +842,7 @@ async function doNextRound(){
 
 function mpCurrentView(){
   if(!gameState)return'home';
+  if(gameState.status==='waiting')return'waiting_room';
   if(gameState.status==='bidding'||gameState.status==='bidding_blind')return'bidding';
   if(gameState.status==='playing')return'playing';
   if(gameState.status==='round_end')return'round_end';
