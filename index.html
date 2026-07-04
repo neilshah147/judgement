@@ -72,7 +72,7 @@ input::placeholder{color:rgba(255,255,255,.35);letter-spacing:1px;text-transform
 </style>
 </head>
 <body>
-<div class="version-tag">v1.2</div>
+<div class="version-tag">v1.3</div>
 <div id="app">
   <h1>⚜ Judgement</h1>
   <div id="content"></div>
@@ -91,6 +91,7 @@ const RED={S:false,H:true,C:false,D:true};
 function showModeSelect(){
   if(typeof realtimeChannel!=='undefined'&&realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
   if(typeof pollInterval!=='undefined'&&pollInterval){clearInterval(pollInterval);pollInterval=null;}
+  mpShowingTrickResult=false;
   document.getElementById('content').innerHTML=`
     <div class="box" style="max-width:480px;text-align:center;padding:24px">
       <div class="sub" style="margin-bottom:18px">Choose how you'd like to play</div>
@@ -116,7 +117,7 @@ const SC={S:'#93c5fd',H:'#fca5a5',C:'#86efac',D:'#fdba74'};
 const VALS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const RNK=Object.fromEntries(VALS.map((v,i)=>[v,i]));
 const ROUNDS=[7,6,5,4,3,2,1,2,3,4,5,6,7];
-const TRUMPS=['S','H','C','D','S','H','C','D','S','H','C','D','S'];
+const TRUMPS=['S','D','C','H','S','D','C','H','S','D','C','H','S'];
 
 const TWR={
   0:[.79,.59,.47,.29,.23,.23,.14], 1:[.77,.65,.43,.39,.33,.25,.18],
@@ -314,9 +315,8 @@ function playerBidBlind(bid){
 }
 
 function beginPlaying(){
-  if(G.playerBid>G.compBidVal)G.leader='player';
-  else if(G.compBidVal>G.playerBid)G.leader='comp';
-  else G.leader=Math.random()<.5?'player':'comp';
+  // Non-dealer always leads the first trick
+  G.leader=G.dealer==='player'?'comp':'player';
   G.phase='bids_locked';render();
   setTimeout(()=>beginPlayingNow(),2200);
 }
@@ -776,6 +776,7 @@ let gameState=null;
 let realtimeChannel=null;
 let isBusy=false;
 let pollInterval=null;
+let mpShowingTrickResult=false;
 
 async function boot(){
   mpRender('connecting');
@@ -817,6 +818,22 @@ async function doSubmitBid(bid){
   mpRenderForState();
 }
 
+function handleMpStateUpdate(newData){
+  const prevHandsDone=gameState?(gameState.hands_done||0):-1;
+  const trickJustResolved=newData.last_trick&&newData.hands_done>prevHandsDone;
+  gameState=newData;
+  if(trickJustResolved){
+    mpShowingTrickResult=true;
+    mpRenderForState(); // shows playing view with last_trick cards + result
+    setTimeout(()=>{
+      mpShowingTrickResult=false;
+      mpRenderForState(); // now shows correct next state (playing or round_end)
+    },1500);
+  }else{
+    mpRenderForState();
+  }
+}
+
 async function doPlayCard(cardId){
   if(isBusy)return;
   isBusy=true;
@@ -825,8 +842,7 @@ async function doPlayCard(cardId){
   isBusy=false;
   if(error){console.warn(error);mpRenderForState();return;}
   if(!data.ok){console.warn(data.error);mpRenderForState();return;}
-  gameState=data;
-  mpRenderForState();
+  handleMpStateUpdate(data);
 }
 
 async function doNextRound(){
@@ -843,6 +859,7 @@ async function doNextRound(){
 function mpCurrentView(){
   if(!gameState)return'home';
   if(gameState.status==='waiting')return'waiting_room';
+  if(mpShowingTrickResult)return'playing'; // always show playing view during 1.5s result flash
   if(gameState.status==='bidding'||gameState.status==='bidding_blind')return'bidding';
   if(gameState.status==='playing')return'playing';
   if(gameState.status==='round_end')return'round_end';
@@ -877,17 +894,17 @@ function subscribeToGame(gameId){
       {event:'UPDATE',schema:'public',table:'games',filter:`id=eq.${gameId}`},
       async()=>{
         const{data,error}=await sb.rpc('get_state',{p_game_id:gameId});
-        if(!error&&data.ok){gameState=data;mpRenderForState();}
+        if(!error&&data.ok)handleMpStateUpdate(data);
       }
     )
     .subscribe();
 
   pollInterval=setInterval(async()=>{
-    if(isBusy)return;
+    if(isBusy||mpShowingTrickResult)return;
     const{data,error}=await sb.rpc('get_state',{p_game_id:gameId});
     if(!error&&data.ok){
       const changed=JSON.stringify(data)!==JSON.stringify(gameState);
-      if(changed){gameState=data;mpRenderForState();}
+      if(changed)handleMpStateUpdate(data);
     }
   },3000);
 }
@@ -1087,7 +1104,14 @@ function mpRenderPlaying(c){
   else{oppStatusColor='#86efac';oppStatusNote='On track';}
 
   let leadSuit=null,myTrickCard=null,oppTrickCard=null;
-  if(g.trick&&g.trick.length>0){
+  if(mpShowingTrickResult&&g.last_trick){
+    // During 1.5s result flash — show the cards that were just played
+    for(const play of g.last_trick.plays){
+      if(play.slot===mySlot)myTrickCard=play.card_id;
+      else oppTrickCard=play.card_id;
+    }
+    leadSuit=g.last_trick.lead_suit;
+  }else if(g.trick&&g.trick.length>0){
     leadSuit=g.trick[0].card_id.slice(-1);
     for(const play of g.trick){
       if(play.slot===mySlot)myTrickCard=play.card_id;
@@ -1100,29 +1124,33 @@ function mpRenderPlaying(c){
   const handCards=g.my_hand.map((cid)=>{
     const suit=cid.slice(-1);
     const illegal=leadSuit&&hasLeadSuit&&suit!==leadSuit;
-    const canPlay=myTurn&&!illegal;
+    const canPlay=myTurn&&!illegal&&!mpShowingTrickResult;
     return cardHtml(cid,{clickable:canPlay,dim:!canPlay});
   }).join('');
 
-  let statusMsg=isBusy
-    ?'Playing your card...'
-    :(myTurn
-        ?(g.trick.length===0?'Your turn to lead — play any card.':'Your turn — play a card.')
-        :"Opponent's turn...");
-
-  let lastTrickBanner='';
-  if(g.last_trick){
+  let statusMsg='';
+  if(mpShowingTrickResult&&g.last_trick){
     const winnerIsMe=g.last_trick.winner===mySlot;
-    lastTrickBanner=`
-      <div style="text-align:center;font-size:13px;opacity:.6;margin-bottom:6px">
-        Last trick: ${winnerIsMe?'You won':'Opponent won'} (${g.last_trick.winning_card})
-      </div>
-    `;
+    statusMsg=winnerIsMe?'You win the trick.':'Opponent wins the trick.';
+  }else if(isBusy){
+    statusMsg='Playing your card...';
+  }else{
+    statusMsg=myTurn
+      ?(g.trick.length===0?'Your turn to lead — play any card.':'Your turn — play a card.')
+      :"Opponent's turn...";
   }
+
+  const trickLabel=mpShowingTrickResult&&g.last_trick
+    ?`Trick ${g.last_trick.trick_number} of ${n} — Lead: ${SYM[g.last_trick.lead_suit]} ${SNAME[g.last_trick.lead_suit]}`
+    :`Current Trick${leadSuit?' — Lead: '+SYM[leadSuit]+' '+SNAME[leadSuit]:''}`;
+
+  const resultColor=mpShowingTrickResult&&g.last_trick
+    ?(g.last_trick.winner===mySlot?'#86efac':'#fca5a5')
+    :'#fbbf24';
 
   c.innerHTML=`
     <div class="box" style="max-width:480px">
-      <div class="lbl" style="text-align:center">Round ${g.round_idx+1} of 13 — Trick ${g.hands_done+1} of ${n}</div>
+      <div class="lbl" style="text-align:center">Round ${g.round_idx+1} of 13 — Trick ${g.hands_done} of ${n}</div>
       <div style="text-align:center;margin:8px 0">
         <span class="chip" style="background:rgba(255,255,255,.08)">Trump: ${SYM[g.trump]} ${SNAME[g.trump]}</span>
       </div>
@@ -1142,16 +1170,13 @@ function mpRenderPlaying(c){
       </div>
     </div>
     <div class="box" style="max-width:480px">
-      ${lastTrickBanner}
-      <div class="lbl" style="text-align:center;margin-bottom:6px">
-        Current Trick${leadSuit?' — Lead: '+SYM[leadSuit]+' '+SNAME[leadSuit]:''}
-      </div>
+      <div class="lbl" style="text-align:center;margin-bottom:6px">${trickLabel}</div>
       <div style="display:flex;justify-content:space-around;align-items:center;padding:8px 0">
         <div style="text-align:center"><div class="lbl">Opponent</div>${cardHtml(oppTrickCard)}</div>
         <div style="font-size:20px;opacity:.2">⚔</div>
         <div style="text-align:center"><div class="lbl">You</div>${cardHtml(myTrickCard)}</div>
       </div>
-      <div class="status-msg">${statusMsg}</div>
+      <div class="status-msg" style="color:${resultColor}">${statusMsg}</div>
     </div>
     <div class="box" style="max-width:480px">
       <div class="lbl" style="text-align:center;margin-bottom:6px">Your Hand (${g.my_hand.length})</div>
